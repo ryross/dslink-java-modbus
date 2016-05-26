@@ -374,7 +374,7 @@ public class SlaveFolder {
 			if (root.isSerial) root.conn.stop();
 			return;
 		}
-		String name = pointNode.getAttribute("name").getString();
+		String name = pointNode.getName();
 		PointType type = PointType.valueOf(pointNode.getAttribute("type").getString());
 		int offset = getIntValue(pointNode.getAttribute("offset"));
 		int numRegs = getIntValue(pointNode.getAttribute("number of registers"));
@@ -423,7 +423,7 @@ public class SlaveFolder {
 					val.add(b);
 				}
 			} else {
-				LOGGER.debug(Arrays.toString(response.getShortData()));
+				LOGGER.debug("Response for " + name + ": " + Arrays.toString(response.getShortData()));
 				val = parseResponse(response, dataType, scaling, addscale, type, id, offset);
 			}
 		} catch (ModbusTransportException e) {

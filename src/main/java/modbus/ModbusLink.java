@@ -355,11 +355,19 @@ public class ModbusLink {
 		 if (futures.containsKey(event)) {
              return;
          }
+
+		LOGGER.debug("handleSub for " + event.getName());
 		long interval = slave.interval;
-		long nodeInterval =  (event.getAttribute("polling interval").getNumber().longValue() * 1000);
-		if (nodeInterval == 0) {
-			interval = nodeInterval;
+		Value pollingInterval = event.getAttribute("polling interval");
+		if (pollingInterval != null) {
+			LOGGER.debug("found polling interval" +pollingInterval.toString());
+			long nodeInterval = (pollingInterval.getNumber().longValue() * 1000);
+			if (nodeInterval > 0) {
+				interval = nodeInterval;
+			}
 		}
+		LOGGER.debug("interval set to " + interval);
+
          ScheduledThreadPoolExecutor stpe = slave.getDaemonThreadPool();
          ScheduledFuture<?> fut = stpe.scheduleWithFixedDelay(new Runnable() {
              @Override
