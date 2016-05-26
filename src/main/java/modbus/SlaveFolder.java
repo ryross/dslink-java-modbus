@@ -58,6 +58,7 @@ public class SlaveFolder {
 		act.addParameter(new Parameter("scaling", ValueType.NUMBER, new Value(1)));
 		act.addParameter(new Parameter("scaling offset", ValueType.NUMBER, new Value(0)));
 		act.addParameter(new Parameter("writable", ValueType.BOOL, new Value(false)));
+		act.addParameter(new Parameter("polling interval", ValueType.NUMBER, new Value(0)));
 		node.createChild("add point").setAction(act).build().setSerializable(false);
 
 		if (!(this instanceof SlaveNode)) {
@@ -189,6 +190,7 @@ public class SlaveFolder {
 			int offset = event.getParameter("offset", ValueType.NUMBER).getNumber().intValue();
 			int numRegs = event.getParameter("number of registers", ValueType.NUMBER).getNumber().intValue();
 			boolean writable = (type == PointType.COIL || type == PointType.HOLDING) && event.getParameter("writable", ValueType.BOOL).getBool();
+			int interval = event.getParameter("polling interval", ValueType.NUMBER).getNumber().intValue();
 			DataType dataType;
 			if (type == PointType.COIL || type == PointType.DISCRETE) dataType = DataType.BOOLEAN;
 			else try {
@@ -208,6 +210,7 @@ public class SlaveFolder {
 			pnode.setAttribute("scaling", new Value(scaling));
 			pnode.setAttribute("scaling offset", new Value(addscale));
 			pnode.setAttribute("writable", new Value(writable));
+			pnode.setAttribute("polling interval", new Value(interval));
 			setupPointActions(pnode);
 			link.setupPoint(pnode, root);
 			pnode.setAttribute("restoreType", new Value("point"));
@@ -229,6 +232,7 @@ public class SlaveFolder {
 		act.addParameter(new Parameter("scaling", ValueType.NUMBER, pointNode.getAttribute("scaling")));
 		act.addParameter(new Parameter("scaling offset", ValueType.NUMBER, pointNode.getAttribute("scaling offset")));
 		act.addParameter(new Parameter("writable", ValueType.BOOL, pointNode.getAttribute("writable")));
+		act.addParameter(new Parameter("polling interval", ValueType.NUMBER, pointNode.getAttribute("polling interval")));
 		anode = pointNode.getChild("edit");
 		if (anode == null) pointNode.createChild("edit").setAction(act).build().setSerializable(false);
 		else anode.setAction(act);
@@ -305,6 +309,7 @@ public class SlaveFolder {
 			}
 			double scaling = event.getParameter("scaling", ValueType.NUMBER).getNumber().doubleValue();
 			double addscale = event.getParameter("scaling offset", ValueType.NUMBER).getNumber().doubleValue();
+			int interval = event.getParameter("polling interval", ValueType.NUMBER).getNumber().intValue();
 
 			if (!name.equals(pointNode.getName())) {
 				Node newnode = copyPoint(pointNode, name);
@@ -318,6 +323,7 @@ public class SlaveFolder {
 			pointNode.setAttribute("scaling", new Value(scaling));
 			pointNode.setAttribute("scaling offset", new Value(addscale));
 			pointNode.setAttribute("writable", new Value(writable));
+			pointNode.setAttribute("polling interval", new Value(interval));
 			setupPointActions(pointNode);
 			link.setupPoint(pointNode, root);
 			pointNode.setAttribute("restoreType", new Value("point"));
@@ -368,6 +374,7 @@ public class SlaveFolder {
 			if (root.isSerial) root.conn.stop();
 			return;
 		}
+		String name = pointNode.getAttribute("name").getString();
 		PointType type = PointType.valueOf(pointNode.getAttribute("type").getString());
 		int offset = getIntValue(pointNode.getAttribute("offset"));
 		int numRegs = getIntValue(pointNode.getAttribute("number of registers"));
@@ -392,7 +399,7 @@ public class SlaveFolder {
 				case HOLDING: request = new ReadHoldingRegistersRequest(id, offset, numRegs);break;
 				case INPUT: request = new ReadInputRegistersRequest(id, offset, numRegs);break;
 			}
-			if (request!=null) LOGGER.debug("Sending request: " + request.toString());
+			if (request!=null) LOGGER.debug("Sending request for " + name + ": " + request.toString());
 			requestString = ":" + id + ":" + offset + ":" + numRegs + ":";
 			if (polledNodes.containsKey(requestString))
 			{
@@ -402,7 +409,7 @@ public class SlaveFolder {
 			polledNodes.put(requestString, true);
 			ReadResponse response = (ReadResponse) root.master.send(request);
 			polledNodes.remove(requestString);
-			LOGGER.debug("Got response: " + response.toString());
+			LOGGER.debug("Got response for " + name + ": " + response.toString());
 			root.statnode.setValue(new Value("Ready"));
 			if (response.getExceptionCode()!=-1) {
 				LOGGER.debug("error response: "+response.getExceptionMessage());

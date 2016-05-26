@@ -355,13 +355,18 @@ public class ModbusLink {
 		 if (futures.containsKey(event)) {
              return;
          }
+		long interval = slave.interval;
+		long nodeInterval =  (event.getAttribute("polling interval").getNumber().longValue() * 1000);
+		if (nodeInterval == 0) {
+			interval = nodeInterval;
+		}
          ScheduledThreadPoolExecutor stpe = slave.getDaemonThreadPool();
          ScheduledFuture<?> fut = stpe.scheduleWithFixedDelay(new Runnable() {
              @Override
              public void run() {
              	if (event.getAttribute("offset") != null) slave.readPoint(event);
              }
-         }, 0, slave.interval, TimeUnit.MILLISECONDS);
+         }, 0, interval, TimeUnit.MILLISECONDS);
          futures.put(event, fut);
 	}
 	
